@@ -392,6 +392,9 @@ async fn a_send_skips_a_companion_whose_bundle_does_not_verify() {
         .unwrap();
     let (kind, ciphertext) = enc_for(&sent.stanza, &bob_jid).expect("bob is reached");
     let alice_jid: Jid = "111:1@s.whatsapp.net".parse().unwrap();
+    // Alice's prekey message carries her device identity, which Bob checks
+    // against the account he pinned for her.
+    let alice_identity = common::vouch(&bob, &alice, "111:1@s.whatsapp.net").await;
     let received = bob
         .receive(ReceiveRequest {
             chat: &alice_jid.to_non_ad().to_string(),
@@ -400,6 +403,7 @@ async fn a_send_skips_a_companion_whose_bundle_does_not_verify() {
             ciphertext: &ciphertext,
             padding_version: 2,
             is_from_me: false,
+            device_identity: (kind == "pkmsg").then_some(alice_identity.as_slice()),
         })
         .await
         .unwrap();
